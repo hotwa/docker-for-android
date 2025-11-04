@@ -1,30 +1,44 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+    "context"
+    "crypto/sha256"
+    "encoding/hex"
+    "fmt"
+    "io"
+    "net"
+    "net/http"
+    "os"
+    "strings"
+    "time"
 )
 
+func init() {
+    // 使用公共DNS服务器
+    net.DefaultResolver = &net.Resolver{
+        PreferGo: true,
+        Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+            d := net.Dialer{}
+            // 使用Google DNS
+            return d.DialContext(ctx, "udp", "8.8.8.8:53")
+        },
+    }
+}
+
 const (
-	// CDN 和服务器地址
-	cdnURL    = "https://fw.kspeeder.com/binary/docker-for-android"
-	serverURL = "https://fw.koolcenter.com/binary/docker-for-android"
+    // CDN 和服务器地址
+    cdnURL    = "https://fw.kspeeder.com/binary/docker-for-android"
+    serverURL = "https://fw.koolcenter.com/binary/docker-for-android"
 )
 
 // CreateHTTPClient 创建统一的 HTTP 客户端
 // 使用 120 秒超时的自定义 Transport
 func CreateHTTPClient() *http.Client {
-	transport := CreateTimeoutTransport(120 * time.Second)
-	return &http.Client{
-		Transport: CreateLogTransport(transport),
-		Timeout:   10 * time.Minute,
-	}
+    transport := CreateTimeoutTransport(120 * time.Second)
+    return &http.Client{
+        Transport: CreateLogTransport(transport),
+        Timeout:   10 * time.Minute,
+    }
 }
 
 // downloadFile 下载文件并验证 SHA256
